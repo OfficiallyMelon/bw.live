@@ -24,4 +24,4 @@ The backend is built using **NodeJS**, ensuring fast and efficient performance.
 
 The site code is a bit *iffy*
 
-#
+# ts is a ai readme 🔥🔥
