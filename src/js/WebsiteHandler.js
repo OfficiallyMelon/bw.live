@@ -1,0 +1,285 @@
+const preloadLoadingImage = new Image();
+preloadLoadingImage.src = '/static/img/status/Line.svg';
+let currentReportButton = null;
+let ThemeSelectorOpen = false;
+
+// Using DOMContentLoaded to execute the script as soon as the DOM is ready
+document.addEventListener('DOMContentLoaded', async function () {
+    document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    loadBackgroundImage(); // Load the saved background image
+
+    const banText = document.querySelector('.ban-text');
+    const bannedCount = document.querySelector('.banned-count');
+    const banIcon = document.querySelector('.icon-ban img');
+
+    initializeLoadingState(banText, bannedCount, banIcon);
+    triggerShowAnimation();
+
+    const frames = {
+        'frame-1': '/static/media/backgrounds/TrainStation.gif' ,
+        'frame-2': '/static/media/backgrounds/Cafe.gif',
+        'frame-3': '/static/media/backgrounds/Pixel-City.gif',
+        'frame-4': '/static/media/backgrounds/CatDay.gif'
+    };
+
+    Object.keys(frames).forEach(frameId => {
+        document.getElementById(frameId).addEventListener('click', function() {
+            setBackgroundImage(frames[frameId]);
+            document.querySelector('.theme-selector').style.visibility = 'hidden';
+        });
+    });
+    fetch("api/reports/logs")
+    .then(response => response.json())
+    .then(data => {
+      if (data.status && data.latest_reports) {
+        data.latest_reports.forEach(report => {
+            handleNewReport(report);
+        });
+      } else {
+        console.error("No latest reports found or error in response data.");
+      }
+    })
+    .catch(error => {
+      console.error("Error fetching latest reports:", error);
+    });
+    document.querySelector('.icon-themes').addEventListener('click', function() {
+        const themeSelector = document.querySelector('.theme-selector'); // Querying by class
+        
+        if (themeSelector.style.visibility === 'hidden' || themeSelector.style.visibility === '') {
+            themeSelector.style.visibility = 'visible';  // Show the element
+        } else {
+            themeSelector.style.visibility = 'hidden';   // Hide the element
+        }
+    });
+    
+
+    const socket = io.connect('https://banwave.live', {
+        transports: ['websocket']
+    });
+
+    socket.on('connect_error', checkServerStatus);
+    socket.on('disconnect', checkServerStatus); 
+    socket.on('new_report', handleNewReport);
+    socket.on('change_banstate', handleBanStateChange);
+
+    checkServerStatus();
+});
+
+
+async function checkServerStatus() {
+    while (true) {
+        try {
+            const StatusData = await fetchStatus();
+            if (StatusData) {
+                updateBanState(StatusData);
+                console.log('Server isnt down.')
+                break;
+            } else {
+                ServerFailed();
+            }
+        } catch (error) {
+            ServerFailed();
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+}
+
+function triggerShowAnimation() {
+    document.querySelectorAll('.ban-info, .live-reports, .footer-content').forEach(el => el.classList.add('show'));
+}
+
+function OpenThemeSelector() {
+    ThemeSelectorOpen = !ThemeSelectorOpen;
+    if (ThemeSelectorOpen) {
+        
+    }
+}
+function setBackgroundImage(imageUrl) {
+    // Set the background image on the body
+    document.body.style.backgroundImage = `url('${imageUrl}')`;
+    document.body.style.backgroundSize = "cover";  // Ensures the image covers the entire background
+    document.body.style.backgroundPosition = "center";  // Centers the image
+    document.body.style.backgroundRepeat = "no-repeat";  // Prevents the image from repeating
+
+    // Save the selected image URL to localStorage
+    localStorage.setItem('backgroundImage', imageUrl);
+}
+
+// Function to load the background image from localStorage
+function loadBackgroundImage() {
+    const savedImage = localStorage.getItem('backgroundImage');
+    if (savedImage) {
+        setBackgroundImage(savedImage);
+    }
+}
+
+function initializeLoadingState(banText, bannedCount, banIcon) {
+    banText.textContent = 'Loading Status...';
+    bannedCount.textContent = '';
+    banText.style.color = '#0081A7';
+    banIcon.src = '/static/img/status/Loading.svg';
+    banIcon.classList.add('spin-icon');
+}
+
+function ServerFailed() {
+    const banText = document.querySelector('.ban-text');
+    const bannedCount = document.querySelector('.banned-count');
+    const banIcon = document.querySelector('.icon-ban img');
+
+    if (banText && bannedCount && banIcon) {
+        banText.textContent = 'Server Down';
+        bannedCount.textContent = 'Attempting to reconnect.';
+        banText.style.color = 'white';
+        banIcon.src = preloadLoadingImage.src;
+        banIcon.classList.add('spin-icon');
+    }
+}
+
+async function fetchStatus() {
+    const url = 'api/info/status';
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch status. Status Code: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        ServerFailed();
+        return null;
+    }
+}
+
+function handleNewReport(event) {
+    console.log(event);
+    const message = parseMessage(event);
+    
+    if (message) {
+        const time = message.ban_end_time;
+        const days = daysFromNow(time);
+        const timeconv = convertDateTimeTo12HourFormat(time);
+        if (currentReportButton) {
+            currentReportButton.remove();
+            console.log("Previous report button removed.");
+        }
+        currentReportButton = createReportButton(timeconv, days);
+        console.log("New Report Button Created");
+        setTimeout(() => {
+            if (currentReportButton) {
+                currentReportButton.remove();
+                console.log("Report button removed after 10 seconds");
+                currentReportButton = null; 
+            }
+        }, 10000);
+    }
+}
+
+
+function handleBanStateChange(event) {
+    const message = parseMessage(event);
+    if (message) {
+        updateBanState(message);
+    }
+}
+
+function parseMessage(event) {
+    return typeof event === "string" ? JSON.parse(event) : event;
+}
+
+function createReportButton(time, days) {
+    const container = document.getElementById('live-report-container');
+    removeNoReportsMessage();
+    const reportList = document.createElement('div');
+    reportList.className = 'report-list';
+    const reportButton = document.createElement('button');
+    reportButton.className = 'report-button';
+    reportButton.innerHTML = `Ban Reported<br><span>${time} &nbsp; ${days} Days</span>`;
+    reportList.appendChild(reportButton);
+    container.appendChild(reportList);
+    limitReports(container); 
+    return reportButton;
+}
+
+function removeNoReportsMessage() {
+    const noReportsMessage = document.getElementById('no-reports-message');
+    if (noReportsMessage) noReportsMessage.remove();
+}
+
+function limitReports(container) {
+    while (container.querySelectorAll('.report-list').length > 1) {
+        const allReports = container.querySelectorAll('.report-list');
+        container.removeChild(allReports[0]); // Remove the oldest report
+    }
+}
+
+
+
+function updateBanState(data) {
+    const banText = document.querySelector('.ban-text');
+    const bannedCount = document.querySelector('.banned-count');
+    const banIcon = document.querySelector('.icon-ban img');
+
+    const isBanwaveOngoing = data.banwave_active ?? false;
+    const Total_Reported = data.total_reported ?? 0;
+
+    if (isBanwaveOngoing) {
+        banText.innerHTML = '<strong>Ongoing Banwave</strong>';
+        bannedCount.textContent = abbrNum(Total_Reported) + ' Banned';
+        banText.style.color = '#E02736';
+        banIcon.src = '/static/img/status/Cross.svg';
+        bannedCount.style.color = '#B91F2C';
+    } else {
+        banText.textContent = 'No Ongoing Banwave';
+        banText.style.color = '#1FFF88';
+        bannedCount.textContent = '';
+        bannedCount.style.color = '#0E6939';
+        banIcon.src = '/static/img/status/GreenCheck.svg';
+    }
+
+    document.querySelectorAll('.ban-info, .live-reports, .footer-content').forEach(el => el.classList.add('show'));
+    banIcon.classList.remove('spin-icon');
+}
+
+function convertDateTimeTo12HourFormat(dateTimeString) {
+    const [date, time] = dateTimeString.split(' ');
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    const formattedMinutes = minutes.padStart(2, '0');
+    return `${formattedHour}:${formattedMinutes} ${ampm}`;
+}
+
+function calculateDaysSince(banTime) {
+    const banDate = new Date(banTime);
+    const currentDate = new Date();
+    const timeDiff = currentDate - banDate;
+    return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+}
+
+function daysFromNow(timestamp) {
+    const [datePart, timePart] = timestamp.split(' ');
+    const [year, month, day] = datePart.split('-');
+    const [hours, minutes, seconds] = timePart.split(':');
+    
+    const date = new Date(year, month - 1, day, hours, minutes, seconds);
+    const now = new Date();
+    const diffTime = date - now; // Swap order to find future days
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+}
+
+const abbrNum = number => {
+    const decPlaces = Math.pow(10, 1);
+    const abbrev = ['k', 'm', 'b', 't'];
+    for (let i = abbrev.length - 1; i >= 0; i--) {
+        const size = Math.pow(10, (i + 1) * 3);
+        if (size <= number) {
+            number = Math.round((number * decPlaces) / size) / decPlaces;
+            if (number === 1000 && i < abbrev.length - 1) {
+                number = 1;
+                i++;
+            }
+            return number + abbrev[i];
+        }
+    }
+    return number;
+};

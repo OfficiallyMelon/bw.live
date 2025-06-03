@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Kufam&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>banwave.live</title>
+    <link rel="stylesheet" href="/css/style.css?v1">
+    <script src="https://code.jquery.com/jquery-3.3.1.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js" defer></script>
+    <script src="/js/WebsiteHandler.js?v1" defer></script>
+    <!-- Discord Embed-->
+    <meta property="og:title" content="banwave.live">
+    <meta property="og:description" content="ROBLOX's first and only banwave detection service, complete with both a website and API for real-time tracking.">
+    <meta property="og:image" content="https://cdn.discordapp.com/attachments/1294793302868099163/1297815169573064724/image.png?ex=67174c10&is=6715fa90&hm=d88b95a5b2397db340bb534a29bfa90be1a7b3ba77efa11225f920a4a3d59360&">
+</head>
+<body>
+    <header>
+        <div class="top-bar">
+            <a href="#" class="site-name"><img src="/static/img/layout/BanwaveLogo.svg" alt="banwave.live"></a>
+            <div class="icons">
+                <a href="https://t.me/banwave_live" target="_blank">
+                    <img class="icon-telegram" src="/static/img/btns/TelegramButton.svg" alt="Telegram">
+                </a>
+                <a href="https://discord.gg/yb5XJUQsCf" target="_blank">
+                    <img class="icon-discord" src="/static/img/btns/DiscordButton.svg" alt="Discord">
+                </a>
+                <a href="https://example.com" target="_blank">
+                    <img class="icon-api" src="/static/img/btns/APIButton.svg" alt="API Docs">
+                </a>
+                <img class="icon-themes" src="/static/img/btns/ThemeButton.svg" alt="API Docs">
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="theme-block"></div>
+        <div class="theme-selector">
+            <div class="grid-window">
+                <div class="theme-small-frame frame-1" id="frame-1"></div>
+                <div class="theme-small-frame frame-2" id="frame-2"></div>
+                <div class="theme-small-frame frame-3" id="frame-3"></div>
+                <div class="theme-small-frame frame-4" id="frame-4"></div>
+            </div>
+        </div>        
+        <section class="ban-info">
+            <div class="ban-status">
+                <div class="icon-ban"><img src="/static/img/status/Cross.svg" alt="Ban Icon"></div>
+                <h1 class="ban-text">Loading</h1>
+                <p class="banned-count" style="font-family: 'Kufam', sans-serif;"></p>
+            </div>
+        </section>
+
+        <section class="live-reports">
+            <h2 style="font-family: 'Kufam', sans-serif; margin-bottom: 5px; color: white;">Live Reports</h2>
+            <img src="/static/img/btns/Line.svg" alt="Line" class="line-image" style="margin: 0; display: block; width: 100%; max-width: 400px; height: auto;">
+            <h2 style="font-family: 'Kufam', sans-serif; margin-bottom: 25px;"> </h2>
+
+            <div class="report-list">
+                <!--<button class="report-button">Ban Reported<br><span>11:43 PM &nbsp; 7 Days</span></button> -->
+            </div>
+            <div id="live-report-container">
+                <p id="no-reports-message">No Recent Reports</p>
+            </div>
+        </section>
+        
+        
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>site by @officiallymelon</p>
+            <p>ROBLOX's first banwave detection site.</p>
+        </div>
+    </footer>    
+</body>
+</html>

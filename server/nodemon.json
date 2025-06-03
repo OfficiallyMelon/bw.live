@@ -1,0 +1,10 @@
+{
+  "watch": ["*.js", "*.html", ".css"],
+  "ignore": [
+    "db/status.json",
+    "db/*"
+  ],
+  "ext": "js,html, css",
+  "exec": "node server/main.js"
+}
+
